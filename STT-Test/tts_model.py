@@ -7,9 +7,11 @@ import numpy as np
 from chatterbox.tts import ChatterboxTTS
 
 device = "mps" if torch.backends.mps.is_available() else "cpu"
-model = ChatterboxTTS.from_pretrained(device=device)
-
 AUDIO_PROMPT_PATH = "sw3.wav"
+
+bicodec = Bicodec("BiCodec", "wav2vec2-ST")
+spark = Spark("model.q4_k.gguf")
+tokens, codes = bicodec.encode(input)
 
 async def handle_ws():
     uri = "ws://127.0.0.1:8080/models/connect"
@@ -31,12 +33,8 @@ async def handle_ws():
                     text = data["payload"]
                     print(f"🔊 TTS request received: {text}")
 
-                    # Generate audio (float32 PCM)
-                    wav_tensor = model.generate(text, audio_prompt_path=AUDIO_PROMPT_PATH)  # (1, N)
-                    wav_np = wav_tensor.squeeze().cpu().numpy()  # (N,)
-
-                    # Ensure float32 type, raw bytes
-                    audio_bytes = wav_np.astype(np.float32).tobytes()
+                    codes = spark.generate(text, codes)
+                    audio_bytes = bicodec.decode(tokens, codes)
 
                     # Encode base64
                     audio_base64 = base64.b64encode(audio_bytes).decode("utf-8")
