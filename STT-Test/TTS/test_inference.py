@@ -11,7 +11,7 @@ with Timer("Loaded bicodec"):
     bicodec = Bicodec("BiCodec", "wav2vec2-ST")
 
 with Timer("Loaded spark"):
-    spark = Spark("model.q4_k.gguf")
+    spark = Spark("model.q8_0.gguf")
 
 with Timer("Encoded audio"):
     tokens, codes = bicodec.encode(input)
@@ -22,5 +22,6 @@ with Timer("Generated audio"):
 with Timer("Decoded audio"):
     audio = bicodec.decode(tokens, codes)
 
+print(bicodec.sample_rate)
 sf.write(output, audio, bicodec.sample_rate)
 spark.unload()
